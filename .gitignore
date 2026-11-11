@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env*
+!.env.example
+.clasp.json
+**/.clasp.json
+playwright-report/
+test-results/
+work/
+outputs/
+.DS_Store
+
+# Bu dosya yalnızca kamuya açık pilot değerlerini içerir.
+!.env.production

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" fill="none">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="850" y2="610" gradientUnits="userSpaceOnUse"><stop stop-color="#0b2e32"/><stop offset="1" stop-color="#134841"/></linearGradient>
+<linearGradient id="water" x1="650" y1="350" x2="640" y2="620" gradientUnits="userSpaceOnUse"><stop stop-color="#31877e"/><stop offset="1" stop-color="#0d3837"/></linearGradient>
+<pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M0 38V0h38" stroke="#e0eee3" stroke-opacity=".10"/></pattern>
+<pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".65" fill="#fff" opacity=".23"/></pattern>
+</defs>
+<path fill="url(#sky)" d="M0 0h900v620H0z"/><path fill="url(#grid)" d="M0 0h900v620H0z"/>
+<circle cx="605" cy="224" r="145" stroke="#aacabc" stroke-opacity=".28"/>
+<circle cx="605" cy="224" r="174" stroke="#aacabc" stroke-opacity=".22" stroke-dasharray="3 7"/>
+<circle cx="605" cy="224" r="108" fill="#ecc379"/><circle cx="605" cy="224" r="108" fill="url(#dots)"/>
+<path d="M0 334 85 297l68 14 127-90 55 14 98 100 100-31 78 31 120-97 53 25 116-53v410H0z" fill="#286960"/>
+<path d="M0 389c170-32 245-130 369-86 117 41 180 85 294 24 105-56 185-56 237-61v354H0z" fill="#568f79"/>
+<path d="M0 376c181-24 301 42 426 45 119 3 284-98 474-92v291H0z" fill="url(#water)"/>
+<path d="M0 454c160-10 188-40 326-27 176 16 197 87 364 50 79-17 132-38 210-31m-900 54c225-26 285-24 395 12s267 57 505-19M0 548c190-15 262 1 398 30 107 23 252 16 502-45" stroke="#98c5aa" stroke-opacity=".55" stroke-width="2"/>
+<path d="M0 465c89 41 158 33 227 82 37 26 54 49 94 73H0zm900-24c-83 28-137 42-183 84-29 27-62 60-132 95h315z" fill="#123b36"/>
+<path d="M-17 576c99-93 113-192 137-294m-17 247c17-62 43-102 88-140m547 221c41-113 76-193 155-273m-123 240c35-37 74-60 139-82" stroke="#a6b981" stroke-width="3"/>
+<g fill="#7c9f72"><path d="M92 394c-47-13-63-47-67-69 41 10 67 25 67 69Zm17-49c-7-45 10-74 40-92 3 40-9 72-40 92Zm-35 97c-54-5-72-28-81-49 44-5 77 12 81 49Zm-13 35c39-36 71-38 106-30-26 31-68 45-106 30Zm98-46c10-40 36-57 69-65-10 34-29 56-69 65Zm638 74c-23-38-20-71-7-103 25 29 28 63 7 103Zm34-51c5-43 32-69 64-77-10 35-31 65-64 77Zm-58 96c-46-29-61-59-60-95 42 17 67 54 60 95Zm54-12c25-37 56-40 83-36-16 23-50 39-83 36Z"/></g>
+<path d="M0 0h900v620H0z" fill="url(#dots)" opacity=".34"/>
+<path d="M54 52h26m-13-13v26m770-13h26m-13-13v26M54 565h26m-13-13v26m770-13h26m-13-13v26" stroke="#d5e5cc" stroke-opacity=".7"/>
+</svg>
