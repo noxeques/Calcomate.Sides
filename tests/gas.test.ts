@@ -145,3 +145,16 @@ test('ziyaretçi yalnızca yapılandırılmış Google kaynağını ve eşleşen
   assert.throws(() => visitorReply({ ok: true, data }, 'mavi-kopru'), { code: 'CONFIG' });
   assert.equal(visitorReply({ ok: true, data }, 'yesil-iz').version, 1);
 });
+
+test('ziyaretçi boş yayını, servis hatasını ve bozuk yanıtı ayırır', () => {
+  assert.throws(() => visitorReply({ ok: false, code: 'EMPTY', message: 'Henüz yayın yok.' }, 'yesil-iz'), { code: 'EMPTY' });
+  assert.throws(() => visitorReply({ ok: false, code: 'PUBLIC', message: 'Servis ayrıntısı' }, 'yesil-iz'),
+    { code: 'PUBLIC', message: 'Yayın kaynağına şu anda erişilemiyor.' });
+  for (const raw of [
+    null, { ok: false, code: 'EMPTY', message: '' }, { ok: false, code: 'PUBLIC', message: ' ' },
+    { ok: false, code: 'UNKNOWN', message: 'Beklenmeyen hata' }, { ok: true, data: { items: [] } },
+  ]) {
+    assert.throws(() => visitorReply(raw, 'yesil-iz'),
+      { code: 'PUBLIC_INVALID', message: 'Yayın kaynağı geçersiz bir yanıt verdi.' });
+  }
+});

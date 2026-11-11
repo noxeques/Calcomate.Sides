@@ -1,6 +1,6 @@
 import type { PublicSnapshot } from '../../shared/model';
 import { AppError, organizationId } from '../../shared/validation';
-import { publicEndpoint, visitorReply } from '../../shared/wire';
+import { invalidPublication, publicEndpoint, visitorReply } from '../../shared/wire';
 import { DEMO } from '../common/mode';
 
 export async function getPublication(signal: AbortSignal): Promise<PublicSnapshot> {
@@ -15,5 +15,14 @@ export async function getPublication(signal: AbortSignal): Promise<PublicSnapsho
     cache: 'no-store', credentials: 'omit', mode: 'cors', redirect: 'follow', signal,
   });
   if (!response.ok) throw new AppError('CONNECTION', 'Yayın kaynağına bağlanılamadı.');
-  return visitorReply(await response.json(), expected);
+  const mediaType = response.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase();
+  if (mediaType !== 'application/json') throw invalidPublication();
+  let raw: unknown;
+  try {
+    raw = await response.json();
+  } catch (error) {
+    if (error instanceof SyntaxError) throw invalidPublication();
+    throw error;
+  }
+  return visitorReply(raw, expected);
 }
