@@ -193,7 +193,7 @@ function Visitor() {
   const [route, setRoute] = useState(currentRoute);
   const [snapshot, setSnapshot] = useState<PublicSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<AppError | null>(null);
   const [checked, setChecked] = useState('');
   const request = useRef<AbortController | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -202,7 +202,7 @@ function Visitor() {
     const controller = new AbortController();
     request.current = controller;
     setLoading(true);
-    setError('');
+    setError(null);
     const timeout = setTimeout(() => controller.abort('timeout'), 15_000);
     try {
       const publication = await getPublication(controller.signal);
@@ -212,8 +212,14 @@ function Visitor() {
       }
     } catch (problem) {
       if (request.current === controller) {
-        setError(problem instanceof AppError ? problem.message :
-          'Yayın kaynağına ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyin.');
+        if (problem instanceof AppError && problem.code === 'EMPTY') {
+          setSnapshot(null);
+          setChecked('');
+        }
+        setError(controller.signal.aborted
+          ? new AppError('TIMEOUT', 'Yayın kaynağı zamanında yanıt vermedi.')
+          : problem instanceof AppError ? problem : new AppError('CONNECTION',
+            'Yayın kaynağına ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyin.'));
       }
     } finally {
       clearTimeout(timeout);
@@ -248,9 +254,11 @@ function Visitor() {
     <Header settings={settings} page={route.page} />
     <main id="main-content" tabIndex={-1} ref={main} aria-busy={loading}>
       {loading && snapshot && <div className="v-container v-state feedback" role="status">Yayın kontrol ediliyor. Son başarılı kontrol {displayTime(checked)}.</div>}
-      {error && <div className="v-container v-state feedback error" role="alert">
-        <strong>{error}</strong>
-        {snapshot && <p>Son başarılı veri gösteriliyor. Son kontrol {displayTime(checked)}.</p>}
+      {error && <div className={'v-container v-state feedback' + (error.code === 'EMPTY' ? '' : ' error')}>
+        <div role={error.code === 'EMPTY' ? 'status' : 'alert'}>
+          <strong>{error.message}</strong>
+          {snapshot && <p>Son başarılı veri gösteriliyor. Son kontrol {displayTime(checked)}.</p>}
+        </div>
         <button className="v-button secondary" onClick={() => void reload()}><RefreshCw size={16} /> Yeniden dene</button>
       </div>}
       {snapshot ? <Inner snapshot={snapshot} route={route} /> : loading && <div className="v-container v-state" role="status">Yayın yükleniyor…</div>}

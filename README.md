@@ -52,7 +52,7 @@ Komut anonim HTTP yönlendirmelerini, kuruluşu, ham yayın alanlarını ve örn
 
 `CALCOMATESIDES_EXPECT_EVENT_ID` ile yayında olması gereken, `CALCOMATESIDES_ABSENT_EVENT_ID` ile bulunmaması gereken etkinlik kimliğini belirtebilirsiniz. `CALCOMATESIDES_PRIVATE_SENTINEL` alanına özel taslak başlığını veya başka bir özel test işaretini verebilirsiniz.
 
-`scripts/pilot/ReplayCheck.gs` yalnızca mevcut pilot yönetim projesinin editöründe geçici test dosyası olarak çalıştırılır. `pilotReplayCheck` işlevi yapılandırılan üç dosya kimliğini kontrol edip bir örnek bağış ve bir örnek CSV kaydını aynı istek kimlikleriyle iki kez gönderir. Tekrar çalıştırmalar aynı kayıtları doğrular. Dosya normal derleme veya web dağıtımına dahil değildir. Kullanım sırası ve bekleyen Google testleri aşağıdaki doğrulama raporundadır.
+`scripts/pilot/ReplayCheck.gs` yalnızca pilot yönetim projesinin editöründe geçici test dosyası olarak çalıştırılır. Ayrı pilot dosyalarının kimliklerini doğruladıktan sonra editörde `PILOT_REPLAY_SHEET_IDS` komut dosyası özelliğine `CONTENT_SHEET_ID`, `DONATIONS_SHEET_ID` ve `PUBLIC_SHEET_ID` anahtarlarıyla bir JSON nesnesi girin. Bu değerler kaynak depoya girmez. `pilotReplayCheck` işlevi bu değerleri etkin yapılandırmayla karşılaştırıp bir örnek bağış ve bir örnek CSV kaydını aynı istek kimlikleriyle iki kez gönderir. Tekrar çalıştırmalar aynı kayıtları doğrular. Test sonunda geçici dosyayı ve özelliği editörden kaldırın. Dosya normal derleme paketine dahil değildir.
 
 ## Belgeler
 
