@@ -1,7 +1,7 @@
 import type { PublicSnapshot } from '../../shared/model';
-import { AppError, organizationId } from '../../shared/validation';
-import { publicEndpoint, visitorReply } from '../../shared/wire';
+import { AppError } from '../../shared/validation';
 import { DEMO } from '../common/mode';
+import { fetchPublication } from './publication';
 
 export async function getPublication(signal: AbortSignal): Promise<PublicSnapshot> {
   if (DEMO) {
@@ -9,11 +9,6 @@ export async function getPublication(signal: AbortSignal): Promise<PublicSnapsho
     if (!publication) throw new AppError('EMPTY', 'Henüz bir yayın kopyası oluşturulmadı.');
     return publication;
   }
-  const endpoint = publicEndpoint(import.meta.env.VITE_PUBLIC_APPS_SCRIPT_URL ?? '');
-  const expected = organizationId(import.meta.env.VITE_ORGANIZATION_ID ?? '');
-  const response = await fetch(endpoint + '?fresh=' + Date.now(), {
-    cache: 'no-store', credentials: 'omit', mode: 'cors', redirect: 'follow', signal,
-  });
-  if (!response.ok) throw new AppError('CONNECTION', 'Yayın kaynağına bağlanılamadı.');
-  return visitorReply(await response.json(), expected);
+  return fetchPublication(import.meta.env.VITE_PUBLIC_APPS_SCRIPT_URL ?? '',
+    import.meta.env.VITE_ORGANIZATION_ID ?? '', signal);
 }

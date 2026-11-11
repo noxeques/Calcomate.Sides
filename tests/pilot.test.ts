@@ -56,11 +56,14 @@ test('pilot HTTP kontrolü yönlendirmeyi çerezsiz takip eder, Google girişine
 test('pilot tekrar dosyası gerçek motorla iki kez çalıştırıldığında iki günlük kaydı bırakır', async () => {
   const source = await readFile('scripts/pilot/ReplayCheck.gs', 'utf8');
   const pilot = fixture('calcomatesides-pilot');
+  const expectedSheets = {
+    CONTENT_SHEET_ID: 'fixture-content-sheet-001',
+    DONATIONS_SHEET_ID: 'fixture-donation-sheet-001',
+    PUBLIC_SHEET_ID: 'fixture-publication-sheet-001',
+  };
   const config: Record<string, string> = {
     ORGANIZATION_ID: 'calcomatesides-pilot',
-    CONTENT_SHEET_ID: '17Ux0nhVsOL-0pWAWh84aWWvxpEUb3UG2sWHGNAAe-M0',
-    DONATIONS_SHEET_ID: '1TDqDh6vgBvifsf3TCJW-0zO-kw5hKxpdOKOMX1EgNv8',
-    PUBLIC_SHEET_ID: '1TMemOB7FiTvKkskyNBRjBa4a3UWKAZUqgKAQfmgeaB8',
+    ...expectedSheets,
   };
   const context = vm.createContext({
     PropertiesService: { getScriptProperties: () => ({ getProperty: (key: string) => config[key] }) },
@@ -69,6 +72,11 @@ test('pilot tekrar dosyası gerçek motorla iki kez çalıştırıldığında ik
     Logger: { log() {} },
   });
   vm.runInContext(source, context);
+  assert.throws(() => vm.runInContext('pilotReplayCheck()', context), /Pilot yapılandırması/);
+  config.PILOT_REPLAY_SHEET_IDS = JSON.stringify({ ...expectedSheets, DONATIONS_SHEET_ID: 'unmatched-donation-sheet-001' });
+  assert.throws(() => vm.runInContext('pilotReplayCheck()', context), /Pilot yapılandırması/);
+  assert.equal(pilot.log.donations.length, 0);
+  config.PILOT_REPLAY_SHEET_IDS = JSON.stringify(expectedSheets);
   vm.runInContext('pilotReplayCheck()', context);
   vm.runInContext('pilotReplayCheck()', context);
   assert.equal(pilot.log.donations.length, 2);
