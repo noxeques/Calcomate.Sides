@@ -1,0 +1,41 @@
+name: Pilot verification
+on:
+  push:
+    branches: [harden/pilot-verification-20261115]
+permissions:
+  contents: read
+jobs:
+  project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Local browser suite
+        env:
+          VITE_ORGANIZATION_ID: ''
+          VITE_PUBLIC_APPS_SCRIPT_URL: ''
+        run: |
+          npm run build
+          npm run test:browser
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Anonymous Google HTTP
+        run: |
+          export VITE_ORGANIZATION_ID=$(node --env-file=.env.production -p 'process.env.VITE_ORGANIZATION_ID')
+          export CALCOMATESIDES_PUBLIC_EXEC_URL=$(node --env-file=.env.production -p 'process.env.VITE_PUBLIC_APPS_SCRIPT_URL')
+          npm run pilot:public
