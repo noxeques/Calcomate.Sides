@@ -212,7 +212,7 @@ function Visitor() {
       }
     } catch (problem) {
       if (request.current === controller) {
-        if (problem instanceof AppError && problem.code === 'EMPTY') {
+        if (problem instanceof AppError && (problem.code === 'EMPTY' || problem.code === 'CONFIG')) {
           setSnapshot(null);
           setChecked('');
         }

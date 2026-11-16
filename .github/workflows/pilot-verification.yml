@@ -18,6 +18,97 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      - name: Production visitor with controlled responses
+        run: |
+          node scripts/smoke-server.mjs &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:48731/ -o /dev/null; then break; fi
+            sleep 1
+          done
+          node --env-file=.env.production --import tsx --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import { chromium } from 'playwright';
+          import { EMPTY_SETTINGS } from './shared/model.ts';
+          const endpoint = process.env.VITE_PUBLIC_APPS_SCRIPT_URL;
+          const organizationId = process.env.VITE_ORGANIZATION_ID;
+          const browser = await chromium.launch();
+          try {
+            const page = await browser.newPage();
+            let responseOrganization = organizationId;
+            let version = 0;
+            await page.route(url => url.origin + url.pathname === endpoint, async route => {
+              const data = { schema: 1, organizationId: responseOrganization, version: ++version,
+                publishedAt: '2026-11-15T09:00:00.000Z', settings: EMPTY_SETTINGS, items: [] };
+              await route.fulfill({ json: { ok: true, data }, headers: { 'access-control-allow-origin': '*' } });
+            });
+            await page.goto('http://127.0.0.1:48731/');
+            const empty = page.getByText('Şu anda yaklaşan etkinlik bulunmuyor.', { exact: true });
+            await empty.waitFor();
+            responseOrganization = 'other-pilot';
+            await page.getByRole('button', { name: 'Yenile', exact: true }).click();
+            await page.getByRole('alert').getByText('Yayın kaynağı yapılandırılan kuruluşla eşleşmiyor.').waitFor();
+            assert.equal(await page.locator('.publication-note').count(), 0);
+            assert.equal(await empty.count(), 0);
+            responseOrganization = organizationId;
+            await page.getByRole('button', { name: 'Yeniden dene', exact: true }).click();
+            await empty.waitFor();
+            assert.equal(await page.getByRole('alert').count(), 0);
+            console.log('Production visitor: empty publication, organization mismatch, stale snapshot removal, retry passed.');
+          } finally { await browser.close(); }
+          EOF
+      - name: Anonymous Google CORS from local Chromium origin
+        continue-on-error: true
+        run: |
+          node scripts/smoke-server.mjs &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:48731/ -o /dev/null; then break; fi
+            sleep 1
+          done
+          node --env-file=.env.production --input-type=module <<'EOF'
+          import { chromium } from 'playwright';
+          const endpoint = process.env.VITE_PUBLIC_APPS_SCRIPT_URL;
+          const browser = await chromium.launch();
+          try {
+            const page = await browser.newPage();
+            const requests = [];
+            const responses = [];
+            const failures = [];
+            page.on('request', request => {
+              const url = new URL(request.url());
+              if (url.origin + url.pathname === endpoint) requests.push(url.searchParams.get('fresh'));
+            });
+            page.on('response', response => {
+              const host = new URL(response.url()).hostname;
+              if (host === 'script.google.com' || host === 'script.googleusercontent.com') {
+                responses.push({ host, status: response.status() });
+              }
+            });
+            page.on('requestfailed', request => {
+              const host = new URL(request.url()).hostname;
+              if (host === 'script.google.com' || host === 'script.googleusercontent.com') {
+                failures.push({ host, error: request.failure()?.errorText });
+              }
+            });
+            const ready = page.getByRole('button', { name: 'Yenile', exact: true });
+            const alert = page.getByRole('alert');
+            const waitForResult = () => ready.or(alert).first().waitFor({ timeout: 20_000 });
+            await page.goto('http://127.0.0.1:48731/');
+            await waitForResult();
+            if (await ready.isVisible()) {
+              await ready.click();
+              await waitForResult();
+            }
+            const result = { origin: 'http://127.0.0.1:48731', requests: requests.length, responses, failures,
+              freshRequests: new Set(requests).size, publicationVisible: await ready.isEnabled().catch(() => false),
+              alert: await alert.textContent({ timeout: 1000 }).catch(() => null) };
+            console.log(JSON.stringify(result));
+            if (!result.publicationVisible || result.freshRequests !== 2) process.exitCode = 1;
+          } finally { await browser.close(); }
+          EOF
       - name: Local browser suite
         env:
           VITE_ORGANIZATION_ID: ''

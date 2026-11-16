@@ -12,6 +12,9 @@ export function publicEndpoint(value: string): string {
     'Kurulum eksik. Kamuya açık Apps Script /exec adresini tanımlayın.', 'CONFIG');
   return value;
 }
+export function isGooglePublicationUrl(value: string): boolean {
+  return /^https:\/\/(?:script\.google\.com|script\.googleusercontent\.com)\//.test(value);
+}
 export function visitorReply(raw: unknown, expected: string): PublicSnapshot {
   const reply = raw as Partial<Envelope<unknown>> | null;
   if (reply?.ok === false && typeof reply.message === 'string') {

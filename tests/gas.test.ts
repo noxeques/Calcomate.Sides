@@ -25,19 +25,26 @@ function googleStub() {
     assert.ok(key, 'only configured files may be accessed');
     return key;
   };
-  const calls = { access: 0, releases: 0, locked: false, unavailable: false, ranges: [] as string[] };
+  const calls = { access: 0, locks: 0, releases: 0, locked: false, unavailable: false,
+    ranges: [] as string[], properties: [] as string[] };
   const owner = {
     setTitle() { return this; },
     addMetaTag() { return this; },
   };
   Object.assign(globalThis, {
     Session: { getActiveUser: () => ({ getEmail: () => account.active }), getEffectiveUser: () => ({ getEmail: () => account.effective }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: (key: string) => props[key] ?? null }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty(key: string) {
+      calls.properties.push(key);
+      return props[key] ?? null;
+    } }) },
     HtmlService: { createHtmlOutput: (body: string) => ({ ...owner, body }), createHtmlOutputFromFile: (body: string) => ({ ...owner, body }) },
-    LockService: { getScriptLock: () => ({
-      tryLock() { if (calls.unavailable) return false; assert.equal(calls.locked, false); return calls.locked = true; },
-      releaseLock() { assert.equal(calls.locked, true); calls.locked = false; calls.releases++; },
-    }) },
+    LockService: { getScriptLock() {
+      calls.locks++;
+      return {
+        tryLock() { if (calls.unavailable) return false; assert.equal(calls.locked, false); return calls.locked = true; },
+        releaseLock() { assert.equal(calls.locked, true); calls.locked = false; calls.releases++; },
+      };
+    } },
     Utilities: {
       DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
       computeDigest: (_: unknown, value: string) => [...createHash('sha256').update(value).digest()],
@@ -83,18 +90,36 @@ function googleStub() {
   return { account, calls, ids, props, sheet };
 }
 
-test('Apps Script giriş ve RPC çağrıları kimlik yokken Sheets’e dokunmaz', () => {
+test('Apps Script giriş ve yönetim RPC’leri yetkisiz hesapta veri bağlamını kurmaz', () => {
   const s = googleStub();
-  for (const active of ['', 'unlisted@example.invalid']) {
-    s.account.active = s.account.effective = active;
+  const unlisted = 'unlisted@example.invalid';
+  const queries = ['overview', 'contents', 'theme', 'donations', 'history', 'publication', 'exportData', 'exportDonations'];
+  const actions = ['content.save', 'content.publish', 'content.archive', 'theme.save', 'donation.save',
+    'donation.cancel', 'donation.import', 'publication.retry'];
+  const claimedIdentity = { email: actor, actor, admin: true };
+  for (const [active, effective] of [['', actor], [unlisted, unlisted], [actor, unlisted], [actor, '']]) {
+    Object.assign(s.account, { active, effective });
     assert.match((adminPage() as unknown as { body: string }).body, /erişim reddedildi/);
-    assert.match(JSON.stringify(adminQuery('exportData', { email: actor, admin: true })), /"AUTH"/);
-    assert.match(JSON.stringify(adminMutate({ action: 'donation.save', email: actor, admin: true })), /"AUTH"/);
+    for (const name of queries) {
+      assert.match(JSON.stringify(adminQuery(name, claimedIdentity)), /"code":"AUTH"/, name);
+    }
+    for (const action of actions) {
+      assert.match(JSON.stringify(adminMutate({ action, ...claimedIdentity })), /"code":"AUTH"/, action);
+    }
   }
   assert.equal(s.calls.access, 0);
+  assert.equal(s.calls.locks, 0);
+  assert.deepEqual([...new Set(s.calls.properties)], ['ADMIN_EMAILS']);
+
+  s.props.ADMIN_EMAILS = '';
   s.account.active = s.account.effective = actor;
+  assert.match(JSON.stringify(adminQuery('overview', claimedIdentity)), /"code":"AUTH"/);
+  assert.equal(s.calls.access, 0);
+  assert.equal(s.calls.locks, 0);
+
+  s.props.ADMIN_EMAILS = actor;
   s.calls.unavailable = true;
-  assert.match(JSON.stringify(adminMutate({ action: 'donation.save', fields: donation })), /"BUSY"/);
+  assert.match(JSON.stringify(adminMutate({ action: 'donation.save', fields: donation })), /"code":"BUSY"/);
   assert.equal(s.calls.access, 0);
 });
 

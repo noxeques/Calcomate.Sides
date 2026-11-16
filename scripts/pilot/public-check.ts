@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import type { PublicSnapshot } from '../../shared/model';
 import { AppError, identifier, object, requireValue } from '../../shared/validation';
-import { publicEndpoint, visitorReply } from '../../shared/wire';
+import { isGooglePublicationUrl, publicEndpoint, visitorReply } from '../../shared/wire';
 
 const SETTINGS = ['organizationName', 'tagline', 'introduction', 'about', 'theme', 'primary', 'accent', 'logo',
   'menu', 'email', 'phone', 'address', 'socials', 'terms', 'privacy', 'notice', 'support'];
@@ -51,8 +51,7 @@ export async function readPublication(endpoint: string, fetcher: Fetcher = fetch
   const redirects: { host: string; status: number }[] = [];
   const signal = AbortSignal.timeout(30_000);
   for (let attempt = 0; attempt <= 5; attempt++) {
-    requireValue(url.protocol === 'https:' && !url.username && !url.password &&
-      ['script.google.com', 'script.googleusercontent.com'].includes(url.hostname),
+    requireValue(isGooglePublicationUrl(url.href),
     'Google yayın yönlendirmesi beklenmeyen adrese gitti. Anonim dağıtımı kontrol edin.', 'REDIRECT');
     const response = await fetcher(url, { redirect: 'manual', credentials: 'omit', cache: 'no-store', signal });
     redirects.push({ host: url.hostname, status: response.status });
