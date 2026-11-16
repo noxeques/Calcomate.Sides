@@ -1,5 +1,5 @@
 import { AppError, organizationId } from '../../shared/validation';
-import { publicEndpoint, visitorReply } from '../../shared/wire';
+import { isGooglePublicationUrl, publicEndpoint, visitorReply } from '../../shared/wire';
 
 export async function fetchPublication(endpoint: string, organization: string, signal: AbortSignal) {
   const url = publicEndpoint(endpoint);
@@ -7,6 +7,9 @@ export async function fetchPublication(endpoint: string, organization: string, s
   const response = await fetch(url + '?fresh=' + Date.now(), {
     cache: 'no-store', credentials: 'omit', mode: 'cors', redirect: 'follow', signal,
   });
+  if (!isGooglePublicationUrl(response.url)) {
+    throw new AppError('CONFIG', 'Yayın kaynağı beklenmeyen bir adrese yönlendi. Dağıtım ayarları kontrol edilmeli.');
+  }
   if (!response.ok) throw new AppError('CONNECTION', 'Yayın servisi yanıt veremedi. Biraz sonra yeniden deneyin.');
   if (!/^application\/json\s*(?:;|$)/i.test(response.headers.get('content-type') ?? '')) {
     throw new AppError('INVALID_PUBLICATION', 'Yayın servisi beklenen JSON yanıtını göndermedi.');
