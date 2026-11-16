@@ -95,7 +95,8 @@ jobs:
             });
             const ready = page.getByRole('button', { name: 'Yenile', exact: true });
             const alert = page.getByRole('alert');
-            const waitForResult = () => ready.or(alert).first().waitFor({ timeout: 20_000 });
+            const refreshed = ready.and(page.locator('button:enabled'));
+            const waitForResult = () => refreshed.or(alert).first().waitFor({ timeout: 20_000 });
             await page.goto('http://127.0.0.1:48731/');
             await waitForResult();
             if (await ready.isVisible()) {
